@@ -1,0 +1,26 @@
+# MIT licensed
+# Copyright Thomas Lehmann 2019
+
+# Keybinding for Git 
+#
+# - fill in a treeish (branch/tag) at the current cursor position
+# 
+
+function _has_git() {
+	git rev-parse HEAD >/dev/null 2>&1
+}
+
+function _usbashbind_git_treeish() {
+	if ! _has_git; then
+		return
+	fi
+
+	local ref="$( { git branch -a --no-color | sed -r 's/^..//' | grep -vE ' -> |at [a-f0-9]+' ; git tag -l | sed -r 's/^/tag: /'; } \
+		| fzf \
+		| sed -r 's/^tag: //' )"
+
+	READLINE_LINE="${READLINE_LINE}${ref}"
+	READLINE_POINT=$(( ${READLINE_POINT} + ${#ref} ))
+}
+
+bind -x '"\C-g\C-b": "_usbashbind_git_treeish"'

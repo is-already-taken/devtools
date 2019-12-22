@@ -1,0 +1,11 @@
+
+" MIT licensed
+" Copyright Thomas Lehmann 2017
+
+" Commands and keybindings
+"
+" - call Git/tig commands with the current file
+
+command! Gitblame :execute "silent !tig blame -- %" | execute "redraw!"
+
+:nmap <F10>gb :Gitblame<CR>

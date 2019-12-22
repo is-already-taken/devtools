@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+
+# MIT licensed
+# Copyright Thomas Lehmann 2017
+
+# Commit the staged changes with a message referencing another commit's message.
+# 
+
+function main() {
+	local ref="${1}"
+	shift
+
+	local message="${*}"
+	local rel_subject=""
+
+	rel_subject="$( git log --format="%s" -1 ${ref} 2>/dev/null )"
+
+	if [ ${?} -ne 0 ]; then
+		echo "Commit not found."
+		exit 1
+	fi
+
+	message="AMEND: '${rel_subject}' | ${message}"
+
+	git commit -m "${message}"
+}
+
+main ${@}

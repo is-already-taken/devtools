@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+
+# MIT licensed
+# Copyright Thomas Lehmann 2017
+
+# Branch off the current HEAD to <branch>_/SP-<n> where <n> is an 
+# automatially incrementing counter.
+# 
+
+function fail() {
+	echo "${*}"
+	exit 1
+}
+
+function main() {
+	local branch="$( git rev-parse --abbrev-ref HEAD )"
+	local counter
+
+	if [ "${branch}" == "HEAD" ]; then
+		fail "Not creating savepoint branch from detached HEAD."
+	fi
+
+	counter="$(
+		git branch -l \
+			| sed -r 's/^..//' \
+			| grep "${branch}_/SP-" \
+			| sed -r 's;_/SP-; ;' \
+			| awk '{print $2}' \
+			| sort -r
+	)"
+
+	if [ -z "${counter}" ]; then
+		counter=0
+	fi
+
+	(( counter++ ))
+
+	branch="${branch}_/SP-${counter}"
+
+	git branch ${branch} HEAD \
+		&& echo "Created savepoint ${branch}"
+}
+
+main ${@}

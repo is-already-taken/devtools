@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+
+# MIT licensed
+# Copyright Thomas Lehmann 2019
+
+# Rebase --onto <new base> <old base> while using fzf to pick the refs
+#
+
+function fail() {
+	echo "${*}"
+	exit 1
+}
+
+function main() {
+	local new_base=""
+	local sha=""
+
+	if ! which fzf >/dev/null 2>&1; then
+		fail "Add fzf (fuzzy finder) to PATH."
+	fi
+
+	new_base="$( { git branch -a --no-color \
+			| sed -r 's/^..//' \
+			| grep -vE ' -> |at [a-f0-9]+' ; git tag -l \
+			| sed -r 's/^/tag: /'; } \
+		| fzf --no-sort \
+			--header="Select the new base" --prompt="new base > " \
+		| sed -r 's/^tag: //' )"
+
+	if [ -z "${new_base}" ]; then
+		fail "No new base selected."
+	fi
+
+	sha="$( git log \
+			--format="%C(Yellow)%h%Creset%C(Green)%d%Creset%n%s" -z \
+		| fzf --no-sort --read0 --reverse --ansi \
+			--header="Select the old base SHA" --prompt="old base > " \
+		| head -n1 \
+		| awk '{ print $1 }' )"
+
+	if [ -z "${sha}" ]; then
+		fail "No base commit selected."
+	fi
+
+	git rebase --onto ${new_base} ${sha}
+}
+
+main ${@}

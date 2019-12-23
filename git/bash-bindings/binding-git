@@ -1,9 +1,10 @@
 # MIT licensed
 # Copyright Thomas Lehmann 2019
 
-# Keybinding for Git 
+# Keybindings for Git
 #
 # - fill in a treeish (branch/tag) at the current cursor position
+# - fill in a SHA from the log of the current HEAD
 # 
 
 function _has_git() {
@@ -23,4 +24,19 @@ function _usbashbind_git_treeish() {
 	READLINE_POINT=$(( ${READLINE_POINT} + ${#ref} ))
 }
 
+function _usbashbind_git_commit() {
+	if ! _has_git; then
+		return
+	fi
+
+	local sha="$( git log --format="%C(Yellow)%h%Creset%C(Green)%d%Creset%n%s" -z \
+		| fzf --no-sort --read0 --reverse --ansi \
+		| head -n1 \
+		| awk '{ print $1 }' )"
+
+	READLINE_LINE="${READLINE_LINE}${sha}"
+	READLINE_POINT=$(( ${READLINE_POINT} + ${#sha} ))
+}
+
 bind -x '"\C-g\C-b": "_usbashbind_git_treeish"'
+bind -x '"\C-g\C-h": "_usbashbind_git_commit"'

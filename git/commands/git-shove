@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+
+# MIT licensed
+# Copyright Thomas Lehmann 2020
+
+# git-push wrapper with support for reversed semantics regarding remote 
+# and ref names.
+# 
+# push to selection 
+# 
+# $ git shove foobranch [barbranch:harbranch [:bazbranch]] @foorepo [@barrepo]
+#
+# push to all:
+#
+# $ git shove foobranch [barbranch:harbranch [:bazbranch]]
+#
+
+function fail() {
+	echo "${*}"
+	exit 1
+}
+
+function main() {
+	# parse arguments
+	# - collect refs if value does not start with @
+	# - collect remotes if value starts with @
+	# - if collection ended and no repos collected ask whether to push to all
+	# - for all repos push the refs
+
+	local refs=()
+	local all_repos=()
+	local repos=()
+	local str=""
+
+	while [ ${#} -gt 0 ]; do
+		str="${1}"
+		shift
+
+		if [[ ${str} =~ ^@ ]]; then
+			repos[${#repos}]="${str#@}"
+		elif [ ${#repos} -gt 0 ]; then
+			fail "You may not specify (more) branches after the last repository. Failed at: ${str}"
+		else
+			refs[${#refs}]="${str}"
+		fi
+	done
+
+	if [ ${#refs} -eq 0 ]; then
+		echo "No refs to push."
+		exit 0
+	fi
+
+	if [ ${#repos} -eq 0 ]; then
+		all_repos=( $( git remote ) )
+
+		echo -n "Do you want to push ${refs[@]} to all remotes (${all_repos[@]})? [y/N] "
+		read answer
+
+		if ! [[ ${answer} =~ ^[yY](es)?$ ]]; then
+			exit 0
+		fi
+
+		repos=( ${all_repos[@]} )
+	fi
+
+	for repo in ${repos[@]}; do
+		echo "Push to ${repo}:"
+		git push ${repo} ${refs[@]}
+	done
+}
+
+main ${@}

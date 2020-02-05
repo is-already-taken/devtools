@@ -1,15 +1,21 @@
 # MIT licensed
-# Copyright Thomas Lehmann 2019
+# Copyright Thomas Lehmann 2019,2020
 
 # Keybindings for Git
 #
 # - fill in a treeish (branch/tag) at the current cursor position
 # - fill in a SHA from the log of the current HEAD
+# - fill the relative path to the project root and .git/ dir
 # 
 
 function _has_git() {
 	git rev-parse HEAD >/dev/null 2>&1
 }
+
+function _git_root() {
+	git rev-parse --show-cdup
+}
+
 
 function _usbashbind_git_treeish() {
 	if ! _has_git; then
@@ -38,5 +44,29 @@ function _usbashbind_git_commit() {
 	READLINE_POINT=$(( ${READLINE_POINT} + ${#sha} ))
 }
 
+function _usbashbind_git_repo_root() {
+	if ! _has_git; then
+		return
+	fi
+
+	local root="$( _git_root )"
+
+	READLINE_LINE="${READLINE_LINE}${root}"
+	READLINE_POINT=$(( ${READLINE_POINT} + ${#root} ))
+}
+
+function _usbashbind_git_repo_gitdir() {
+	if ! _has_git; then
+		return
+	fi
+
+	local git_dir="$( _git_root ).git/"
+
+	READLINE_LINE="${READLINE_LINE}${git_dir}"
+	READLINE_POINT=$(( ${READLINE_POINT} + ${#git_dir} ))
+}
+
 bind -x '"\C-g\C-b": "_usbashbind_git_treeish"'
 bind -x '"\C-g\C-h": "_usbashbind_git_commit"'
+bind -x '"\C-g\C-r": "_usbashbind_git_repo_root"'
+bind -x '"\C-g\C-g": "_usbashbind_git_repo_gitdir"'

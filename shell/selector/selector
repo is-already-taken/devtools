@@ -1,0 +1,140 @@
+#!/usr/bin/env python3
+
+# MIT licensed
+# Copyright Thomas Lehmann 2020
+
+# Program to present TAB selectable options in a text UI.
+#
+
+import tty
+import sys
+import os
+
+def setup_tty():
+	tty.setcbreak(sys.stdin)
+	os.system("clear")
+	
+def teardown_tty():
+	os.system("stty echo")
+
+def find_index(lst, fn):
+	try:
+		return next(i for i, value in enumerate(lst) if fn(value))
+	except:
+		return -1
+
+def handle_enter(command, value):
+	"""
+	Run <command> with "{}" replaced by the selected value
+	"""
+	os.system(command.replace("{}", value))
+
+def render_option(name, on=False):
+	return ("[%s]" if on else " %s ") % (name)
+
+def render_selector(options, on_index=0):
+	n = len(options)
+	items = [render_option(name, idx == on_index) for idx, name in enumerate(options)]
+
+	sys.stdout.write(" ".join(items))
+	sys.stdout.write("\r")
+	sys.stdout.flush()
+
+def loop(command, options, initial_index):
+	"""
+	Main render loop
+	"""
+
+	count = len(options)
+	index = initial_index
+
+	render_selector(options, index)
+
+	while True:
+		code = 0
+
+		try:
+			code = ord(sys.stdin.read(1))
+		except KeyboardInterrupt as e:
+			break
+
+		if code == 10:
+			# Enter
+			handle_enter(command, options[index])
+
+		if code == 9:
+			# TAB
+			index += 1
+			index = index % count
+
+		render_selector(options, index)
+
+def parse_options(args):
+	expected = 2
+
+	initial_index = find_index(args, lambda name: name[0] == "*")
+	options = [x for x in map(lambda name: name.replace("*", ""), args)]
+
+	if len(options) < expected:
+		fail("Not enough options specified. Expected %d or more, found %d" % 
+			(expected, len(options)))
+
+	if initial_index == -1:
+		initial_index = 0
+
+	return (options, initial_index)	
+
+def parse_args():
+	"""
+	binary <option> <option> [...] -- <command> [<command arg> [...]]
+	"""
+	args = sys.argv[1:]
+
+	if len(args) < 4:
+		raise Exception("No arguments specified")
+
+	separator_idx = find_index(args, lambda arg: arg == "--")
+
+	if separator_idx == -1:	
+		raise Exception(
+			("No option/command separator found"
+				+ "Usage: <command> -- <option> <option> [...]"))
+
+	option_args = args[0:separator_idx]
+	command_args = args[(separator_idx + 1):]
+
+	if len(command_args) == 0:
+		raise Exception("No command found. Expected 1 or more args, found 0.")
+
+	command = " ".join(command_args)
+
+#	if args[1] != "--":
+#		raise Exception(
+#			("Expected '--' after first argument, found: '%s'. "
+#				+ "Usage: <command> -- <option> <option> [...]")
+#					% (args[1]))
+
+	(options, initial_index) = parse_options(option_args)
+	
+	return (command, options, initial_index)
+
+def fail(msg):
+	print(msg)
+	sys.exit(1)
+
+def main():
+	try:
+		command, options, initial_index = parse_args()
+	except Exception as e:
+		fail(str(e))
+
+#	print("Command: %s" % (command))
+#	sys.exit(0)
+
+	setup_tty()
+
+	loop(command, options, initial_index)
+
+	teardown_tty()
+
+main()

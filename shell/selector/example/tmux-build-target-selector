@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+
+# MIT licensed
+# Copyright Thomas Lehmann 2020
+
+# Example to demonstrate "selector" used together with tmux
+#
+# Run this script from the "example/" directory, it references "selector"
+# relative.
+
+# Dummy "build" command that shall be executed
+#
+build_cmd="echo 'build target {}'"
+
+# Helper variable building the command to "selector" that shall execute on
+# selection. Here it uses tmux send-keys to the main pane to run the (dummy)
+# build command.
+#
+selector_cmd="tmux send-keys -t0 -l \\\"${build_cmd}\\\" \; send-keys -t0 Enter"
+
+# split window will open a new pane (#0), switch to it. The original
+# session is at pane #1.
+
+tmux new-session \; \
+	split-window -v -b -l1 \; \
+	send-keys -t1 -l \
+		"../selector 'foo' '*bar' 'baz' -- \"${selector_cmd}\"" \; \
+	send-keys -t1 'Enter'

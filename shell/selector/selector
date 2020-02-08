@@ -9,6 +9,7 @@
 import tty
 import sys
 import os
+import os.path
 
 def setup_tty():
 	tty.setcbreak(sys.stdin)
@@ -70,6 +71,12 @@ def loop(command, options, initial_index):
 		render_selector(options, index)
 
 def parse_options(args):
+	"""
+	Parse array of options. One option MAY be prefixed with an asterix ("*")
+	to mark it as initially selected.
+
+	[*]<option> <option> [...]
+	"""
 	expected = 2
 
 	initial_index = find_index(args, lambda name: name[0] == "*")
@@ -84,12 +91,10 @@ def parse_options(args):
 
 	return (options, initial_index)	
 
-def parse_args():
+def parse_args(args):
 	"""
 	binary <option> <option> [...] -- <command> [<command arg> [...]]
 	"""
-	args = sys.argv[1:]
-
 	if len(args) < 4:
 		raise Exception("No arguments specified")
 
@@ -108,28 +113,28 @@ def parse_args():
 
 	command = " ".join(command_args)
 
-#	if args[1] != "--":
-#		raise Exception(
-#			("Expected '--' after first argument, found: '%s'. "
-#				+ "Usage: <command> -- <option> <option> [...]")
-#					% (args[1]))
-
 	(options, initial_index) = parse_options(option_args)
 	
 	return (command, options, initial_index)
+
+def help():
+	print(
+		"Usage: %s [*]<option> <option> [...] -- <command> [...]" % 
+			(os.path.basename(sys.argv[0])))
+	sys.exit(0)
 
 def fail(msg):
 	print(msg)
 	sys.exit(1)
 
 def main():
+	if len(sys.argv[1:]) == 0:
+		help()
+
 	try:
-		command, options, initial_index = parse_args()
+		command, options, initial_index = parse_args(sys.argv[1:])
 	except Exception as e:
 		fail(str(e))
-
-#	print("Command: %s" % (command))
-#	sys.exit(0)
 
 	setup_tty()
 

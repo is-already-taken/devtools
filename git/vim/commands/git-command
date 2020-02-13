@@ -1,11 +1,14 @@
 
 " MIT licensed
-" Copyright Thomas Lehmann 2017
+" Copyright Thomas Lehmann 2017,2020
 
 " Commands and keybindings
 "
 " - call Git/tig commands with the current file
+" - call diff --cached to show whats stages (in index)
 
 command! Gitblame :execute "silent !tig blame -- %" | execute "redraw!"
+command! Gitindexdiff :execute "!git diff --cached"
 
 :nmap <F10>gb :Gitblame<CR>
+:nmap <F10>gi :Gitindexdiff<CR>
